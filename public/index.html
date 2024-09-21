@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turbo Calculator</title>
+    <link rel="stylesheet" href="tabs.css">
+</head>
+<body>
+    <h1>Turbo Calculator</h1>
+    <p>These calculators are to compliment Garrett's articles about turbo selection found here: <a href="https://www.garrettmotion.com/news/newsroom/article/how-to-select-a-turbo-part-2-understanding-calculations-to-turbo-any-engine/" target="_blank">How To Select A Turbo Part 2: Calculations</a></p>
+    <p>Any equations and documentation are credit to Garrett Motion Inc.</p>
+    <div class="tab">
+        <button class="tablinks" onclick="openCalculator(event, 'PressureRatio')" id="defaultOpen">Pressure Ratio</button>
+        <button class="tablinks" onclick="openCalculator(event, 'AirFlow')">Air Flow</button>
+        <button class="tablinks" onclick="openCalculator(event, 'ManifoldPressure')">Required Manifold Pressure</button>
+    </div>
+
+    <div id="PressureRatio" class="tabcontent">
+        <h2>Calculating Pressure Ratio ( PR = P2c / P1c )</h2>
+        <form id="pressureRatioForm">
+            <p>Enter Absolute Atmospheric Pressure: <input type="number" id="PSIa" placeholder="PSIa" step="0.1" required></p>
+            <p>Enter Boost Gauge Pressure: <input type="number" id="PSIg" placeholder="PSIg" step="0.1" required></p>
+            <p>Enter System Depression: <input type="number" id="systemDepression" placeholder="Use 1 if unknown" step="0.1" required></p>
+            <button type="submit">Calculate Pressure Ratio</button>
+        </form>
+        <p id="pressureResult"></p>
+        
+        <script>
+            const pressureForm = document.getElementById('pressureRatioForm');
+            pressureForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const PSIa = parseFloat(document.getElementById('PSIa').value);
+                const PSIg = parseFloat(document.getElementById('PSIg').value);
+                const systemDepression = parseFloat(document.getElementById('systemDepression').value);
+        
+                const response = await fetch('http://localhost:3000/calculate-pressure-ratio', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ PSIa, PSIg, systemDepression }),
+                });
+        
+                const data = await response.json();
+                if (data.error) {
+                    document.getElementById('pressureResult').textContent = `Error: ${data.error}`;
+                } else {
+                    document.getElementById('pressureResult').textContent = `Pressure Ratio: ${data.pressureRatio.toFixed(2)}`;
+                }
+            });
+        </script>
+        <p>Pressure ratio is a variable equation that combines atmospheric pressure with gauge pressure divided by atmospheric pressure. This identifies where the compressor will perform its duty cycle. Knowing pressure ratio (PR) is a key component to selecting the correct turbo for your application. PR is identified on the Y (vertical) axis of the compressor map. Pressure ratio is not an indicator of horsepower but we will get to that in another step.<br />
+            What is P2c? Absolute outlet pressure<br />
+            What is P1c? Absolute inlet pressure</p>
+            <ul>
+                <li><strong style="font-size: 1rem;">P2c</strong>= (PSIg + PSIa) <span style="text-decoration: underline;">Boost Gauge Pressure</span> (PSIg) + <span style="text-decoration: underline;">Absolute Atmospheric Pressure</span> (PSIa)</li>
+                <li><strong>P1c </strong>= (PSIa)  <span style="text-decoration: underline;">Absolute Atmospheric Pressure</span> (PSIa) &#8211; 1 <span style="text-decoration: underline;">System Depression</span></li>
+                </ul>
+                <p><strong>PSIg</strong> refers to gauge pressure and measures the pressure above atmospheric. A boost gauge pressure reading of 12 means the pressure in the manifold is 12 psi above atmospheric pressure. Depending on the build of the engine, your gauge pressure limits will vary. Stock engines usually have lower ability to handle boost, while highly modified engines can handle much more. Having a boost target is necessary for determining pressure ratio.</p>
+                <p><strong style="font-size: 1rem;">PSIa</strong> refers to absolute atmospheric pressure. This is standard atmospheric pressure at standard conditions. If you are not at sea level you can substitute a value from the chart below for PSIa.</p>
+                <p><strong>System Depression:</strong> An air filter or a restrictive ducting system will often result in LESS than the atmospheric pressure, especially at higher RPMs. This is because the air filter or ducting adds resistance to the air flow resulting in a pressure loss. Also known as depression, this can result in -1 PSIg or more in some intake systems. <span style="text-decoration: underline;">The depression adjustment is only made to the<strong> (P1c)</strong> part of the equation</span> because P1c is Absolute Inlet Pressure.</p>
+                <img src="images/Boost_Adviser_Elevation_Pressure.jpg" alt="" width="25%" height="25%">
+                <ul>
+                <li><span style="text-decoration: underline;"><strong>Our Example:</strong></span><strong> PR= P2c / P1c</strong></li>
+                <li>P2c (12 boost gauge pressure + 14.7 atmospheric pressure) / P1c (14.7 atmospheric pressure &#8211; 1 depression)</li>
+                <li>(26.7 / 13.7) = <strong>1.95 Pressure Ratio</strong></li>
+                </ul>    
+    </div>
+
+    <div id="AirFlow" class="tabcontent">
+        <h2>Calculating Air Flow  ( Wa = HP x A/F x BSFC/60 )</h2>
+        <form id="airFlowForm">
+            <p>Enter Crank Horsepower Target: <input type="number" id="HP" placeholder="HP" step="0.01" required></p>
+            <p>Enter Air/Fuel Ratio: <input type="number" id="AF" placeholder="A/F" step="0.01" required></p>
+            <p>Enter Brake Specific Fuel Consumption: <input type="number" id="BSFC" placeholder="BSFC" step="0.01" required></p>
+            <button type="submit">Calculate Air Flow</button>
+        </form>
+        <p id="airFlowResult"></p>
+     
+        <script>
+            const airFlowForm = document.getElementById('airFlowForm');
+            airFlowForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                
+                const HP = parseFloat(document.getElementById('HP').value);
+                const AF = parseFloat(document.getElementById('AF').value);
+                const BSFC = parseFloat(document.getElementById('BSFC').value);
+     
+                // Calculate Air Flow
+                const airFlow = HP * AF * (BSFC / 60);
+                
+                document.getElementById('airFlowResult').textContent = `Air Flow: ${airFlow.toFixed(2)} lb/min`;
+            });
+        </script>
+        <p>Mass Flow Rate is the volume of air flowing through a compressor and engine over a given period. This is commonly measured as lbs/min of air flow. This calculation tells us the air flow we need to support our required horsepower target. As a general rule of thumb, Garrett GTX Gen II and G Series turbochargers have the potential to make 100-110 horsepower for every 10 lbs/min of air flow however there are many factors that will impact actual power output including Volumetric Efficiency, fuel quality, and others we will discuss below.</p>
+        <p>Wa = Air Flow Actual (lb/min)<br />
+        HP = Horsepower Target (crank)<br />
+        A/F = Air/Fuel Ratio<br />
+        BSFC/60 = Brake Specific Fuel Consumption</p>
+        <p><strong>Things you need to estimate:</strong></p>
+        <p><span style="text-decoration: underline;">Brake Specific Fuel Consumption:</span> (BSFC). BSFC describes the fuel flow rate required to generate each horsepower. General for turbocharged gasoline engines range from 0.50 to 0.60 and higher. Lower BSFC means that the engine requires less fuel to generate a given horsepower. Race fuels and aggressive tuning are required to reach the low end of the BSFC range described above.<br />
+        Use these inputs for BSFC estimates:<br />
+        <img src="images/How-to-turbo-charts-BSFC.jpg" alt="" width="25%" height="25%">
+        <p><span style="text-decoration: underline;">Air/Fuel Ratio:</span> The AFR defines the ratio of the amount of air consumed by the engine compared to the amount of fuel. For gasoline engines, the stoichiometric , A/F ratio is 14.7:1, which means 14.7 parts of air to one part of fuel. The stoichiometric AFR depends on fuel type&#8211; for alcohol it is 6.4:1 and 14.5:1 for diesel. So what is meant by a rich or lean AFR? A lower AFR number contains less air than the 14.7:1 stoichiometric AFR, therefore it is a richer mixture. Conversely, a higher AFR number contains more air and therefore it is a leaner mixture.<br />
+        Use these inputs for AFR estimates:<br />
+        <img src="images/How-to-turbo-2-AFR-Chart.jpg" alt="" width="25%" height="25%">
+        <p><strong>Formula ( Wa = HP x A/F x BSFC/60 )</strong></p>
+        <ul>
+        <li><strong><span style="text-decoration: underline;">Our example:</span></strong> 650 crank horsepower, 11.5 Air Fuel Ratio, BSFC 0.46</li>
+        <li>650 x 11.5 x .46/60 = 57.3 lb/min</li>
+        <li>This means we need <strong>57.3 lb/min</strong> of air flow to make 650 crank horsepower</li>
+     </div>
+
+     <div id="ManifoldPressure" class="tabcontent">
+        <h2>Calculating Required Manifold Pressure</h2>
+        <img src="images/Manifold-Pressure-Calculation.jpg" alt="" width="25%" height="25%">
+        <form id="manifoldPressureForm">
+            <p>Enter Calculated Air Flow: <input type="number" id="Wa" placeholder="lbs/min" step="0.1" required></p>
+            <p>Enter Gas Constant: <input type="number" id="R" placeholder="Gas Constant" step="0.1" value="639.6" required></p>
+            <p>Enter Intake Manifold Temp: <input type="number" id="Tm" placeholder="Intake Manifold Temp F" step="0.1" required></p>
+            <p>Enter Volumetric Efficiency: <input type="number" id="VE" placeholder="" step="0.01" required></p>
+            <p>Enter Engine Speed: <input type="number" id="N" placeholder="RPM" step="1" required></p>
+            <p>Enter Engine Displacement: <input type="number" id="Vd" placeholder="CID" step="0.1" required></p>
+        </form>
+        <p><strong>Things you need to estimate:</strong></p>
+        <p><span style="text-decoration: underline;">Engine Volumetric Efficiency:</span> VE is how efficient an engine is at moving air through its cylinders. How much goes out vs how much comes in. Peak Volumetric Efficiency (VE) range in the 95%-99% for modern 4-valve heads, to 80% &#8211; 95% for 2-valve designs. On a well-tuned engine, VE will peak at torque peak, and this number can be used to scale down VE at other engine speeds. A 4-valve engine will typically have higher VE over more of its rev range than a two-valve engine.<br />
+        Use these inputs for VE estimates:<br />
+        <img src="images/How-to-turbo-2-VE-Chart.jpg" alt="" width="25%" height="25%">
+        <p><span style="text-decoration: underline;">Intake Manifold Temperature:</span> Compressors with higher efficiency produce lower manifold temperatures. Manifold temperatures of intercooled setups are typically 100 &#8211; 130 degrees F, while non-intercooled engines can reach from 175-300 degrees F.</p>
+        <ul>
+        <li><strong><span style="text-decoration: underline;">Our example:</span></strong> 5.7L/ 348ci , 650 crank hp, VE 0.80 (2 valve engine), 6000 max RPM,</li>
+        <li>MAPreq = Manifold Absolute Pressure (psia) required to meet the horsepower target</li>
+        <li>Wa = Air flow actual(lb/min) <strong>57.3</strong></li>
+        <li>R = Gas Constant = <strong>639.6</strong></li>
+        <li>Tm = Intake Manifold Temperature (degrees F) <strong>130</strong></li>
+        <li>VE = Volumetric Efficiency (2 valve LS engine) VE <strong>0.80</strong></li>
+        <li>N = Engine speed (RPM) <strong>Max RPM 6000</strong></li>
+        <li>Vd = engine displacement in cubic inches (convert liters to CI by multiplying 61.02. example. 5.7 liters x 61.02 = <strong>348 CI)</strong></li>
+        </ul>
+        <img src="images/MAP-pressure-calculation-numbers.jpg" alt="" width="25%" height="25%">
+        <ul>
+        <li><span style="text-decoration: underline;">MAPreq = 26.025 &#8211; 14.7 = 11.3 PSIg</span></li>
+        <li>This means at <strong>6000 RPM</strong> on <strong>11.3 gauge pressure</strong>, the turbo will make enough air for <strong>650 crank</strong> horsepower.</li>
+        </ul>
+        <p><strong>Considering Pressure Loss:</strong> One thing to note is the numbers above do not take into account  how much pressure loss exists between the compressor and manifold. Depending on flow rate, charge air cooler characteristics, piping size, number/quality of the bends, throttle body restriction, etc., the plumbing pressure drop can be estimated. This can be 1 psi or less for a very well designed system. On certain restrictive OEM setups, the pressure drop can be 4 psi or greater. <span style="text-decoration: underline;">For our example we will assume a 2 psi loss. </span></p>
+        <img src="images/MAP-pressure-calculation-Ploss.jpg" alt="" width="25%" height="25%">
+        <ul>
+        <li><span style="text-decoration: underline;"><strong>Our Example:</strong></span> 2 PSI loss</li>
+        <li>P2c = Compressor Discharge Pressure (psia)</li>
+        <li>MAP = Manifold Absolute Pressure <strong>26.025 </strong></li>
+        <li>ΔPloss = Pressure Loss Between the Compressor and the Manifold (psi) <strong>2</strong></li>
+        <li>P2c = 26.025 + 2</li>
+        <li>P2c= <strong>28.025 </strong></li>
+        </ul>
+     </div>
+
+    <script>
+        function openCalculator(evt, calculatorName) {
+            var i, tabcontent, tablinks;
+
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            document.getElementById(calculatorName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        // Open the default tab
+        document.getElementById("defaultOpen").click();
+    </script>
+</body>
+</html>
+
+

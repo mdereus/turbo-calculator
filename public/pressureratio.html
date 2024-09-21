@@ -1,0 +1,33 @@
+<h2>Calculate Pressure Ratio</h2>
+<form id="pressureRatioForm">
+    <input type="number" id="PSIa" placeholder="Enter Absolute Atmospheric Pressure (PSIa)" step="0.1" required>
+    <input type="number" id="PSIg" placeholder="Enter Boost Gauge Pressure (PSIg)" step="0.1" required>
+    <input type="number" id="systemDepression" placeholder="Enter System Depression" step="0.1" required>
+    <button type="submit">Calculate Pressure Ratio</button>
+</form>
+<p id="pressureResult"></p>
+
+<script>
+    const pressureForm = document.getElementById('pressureRatioForm');
+    pressureForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const PSIa = parseFloat(document.getElementById('PSIa').value);
+        const PSIg = parseFloat(document.getElementById('PSIg').value);
+        const systemDepression = parseFloat(document.getElementById('systemDepression').value);
+
+        const response = await fetch('http://localhost:3000/calculate-pressure-ratio', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ PSIa, PSIg, systemDepression }),
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            document.getElementById('pressureResult').textContent = `Error: ${data.error}`;
+        } else {
+            document.getElementById('pressureResult').textContent = `Pressure Ratio: ${data.pressureRatio.toFixed(2)}`;
+        }
+    });
+</script>
